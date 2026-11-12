@@ -5,24 +5,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Unzip project
         run: |
-          unzip -q LiquidOS.zip -d src
-          ls -la src
-      - uses: actions/setup-java@v4
+          ZIP_FILE=$(find . -maxdepth 2 -name "*.zip" | head -1)
+          unzip -q "$ZIP_FILE" -d src
+          
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v3
+          
       - name: Build APK
         run: |
           cd src
-          # zip eka athule root folder ekak thiboth path eka adjust karanna
-          if [ -f gradlew ]; then PROJECT=. ; else PROJECT=$(find . -maxdepth 2 -name gradlew -exec dirname {} \; | head -1); fi
-          cd "$PROJECT"
-          chmod +x ./gradlew
-          ./gradlew assembleDebug
+          
+          # settings.gradle thiyena main folder eka hoyagannawa
+          PROJECT_DIR=$(find . -name settings.gradle* -exec dirname {} \; | head -1)
+          
+          if [ -z "$PROJECT_DIR" ]; then 
+            echo "ERROR: settings.gradle not found inside zip!"; 
+            exit 1; 
+          fi
+          
+          cd "$PROJECT_DIR"
+          
+          # gradlew nathi nisa, system gradle eka use karamu
+          gradle assembleDebug
+          
       - uses: actions/upload-artifact@v4
         with:
           name: LiquidOS-debug
-          path: src/**/app/build/outputs/apk/debug/app-debug.apk
+          path: 'src/**/app/build/outputs/apk/debug/app-debug.apk'
